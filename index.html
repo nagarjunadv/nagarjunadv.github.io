@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+	<!-- add title -->
+	<title>Team 169 Interactive</title>
+    <!-- import required libraries here -->
+	<meta charset="utf-8">
+  <script type="text/javascript" src="../lib/d3.v5.min.js"></script>
+  <script type="text/javascript" src="../lib/d3-dsv.min.js"></script>
+  <script type="text/javascript" src="../lib/topojson.v2.min.js"></script>
+  <script type="text/javascript" src="../lib/d3-geo-projection.v2.min.js"></script>
+  <script type="text/javascript" src="../lib/d3-legend.min.js"></script>
+  <script type="text/javascript" src="../lib/d3-tip.min.js"></script>
+	<style>
+		<!-- define CSS rules here -->
+.countries {
+	fill: gray;
+	stroke: black;
+	stroke-linejoin: round;
+	}
+#tooltip-container {
+	position: absolute;
+	background-color: #fff;
+	color: #000;
+	padding: 10px;
+	border: 1px solid;
+	display: none;
+	}
+
+/* tooltip reference source http://bl.ocks.org/denisemauldin/cb870e6f439864a5ae74d4fc561ac46f */
+/* Tooltip CSS */
+.d3-tip {
+	line-height: 1.5;
+	font-weight: 400;
+	font-size: 12px;
+	font-family:"avenir next", Arial, sans-serif;
+	padding: 6px;
+	background: rgba(0, 0, 0, 0.6);
+	color: #FFA500;
+	border-radius: 1px;
+	pointer-events: none;
+	}
+
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {      
+	box-sizing: border-box;
+	display: inline;
+	font-size: 6px;
+	width: 100%;
+	line-height: 1.5;
+	color: rgba(0, 0, 0, 0.6);
+	position: absolute;
+	pointer-events: none;
+
+	}
+	.d3-tip.n:after {
+	content: "\25BC";
+	margin: -1px 0 0 0;
+	top: 100%;
+	left: 0;
+	text-align: center;
+	}
+
+.bar{
+	fill: tan;
+}
+	</style>
+</head>
+
+<body onload = "form.reset();">
+    <!-- Add heading for the visualization -->
+	
+	<!-- Dropdown -->
+	<select id="dropdown">
+	
+	</select>
+	<div>
+		<h3>Select the Response Metric:</h3>
+		<form name = "form">
+			<label class="radio-inline">
+				<input type="radio" checked = "checked" name="selection" onclick="handleClick(this);" value="Crime Cost Per Capita Actual">Crime Cost Actual
+			</label>
+			<label class="radio-inline">
+				<input type="radio" name="selection" onclick="handleClick(this);" value="Predicted Crime Cost Per Capita">Crime Cost Predicted
+			</label>
+			<label class="radio-inline">
+				<input type="radio" name="selection" onclick="handleClick(this);" value="Total Cost">Total Cost
+			</label>
+			<label class="radio-inline">
+				<input type="radio" name="selection" onclick="handleClick(this);" value="Cost Change over Year">Cost Change over Year
+			</label>
+		</form>
+	</div>
+	<!-- append visualization svg to this div-->
+    <div id="choropleth"></div>
+	<div id="tooltip-container"></div>
+    <script>
+	
+	
+		var currentValue = 'Crime Cost Per Capita Actual'
+		
+		function handleClick(radioSelection) {
+			currentValue = radioSelection.value;
+		}
+		const buttons = d3.selectAll('input');
+		buttons.on('change', function(d) {console.log('button changed to ' + this.value);});
+		
+		
+		console.log("current value",currentValue)
+		// enter code to define margin and dimensions for svg
+		var margin = {top: 100, right: 100, bottom: 100, left: 100},
+		width = window.innerWidth - margin.left - margin.right, // Use the window's width 
+		height = window.innerHeight - margin.top - margin.bottom; // Use the window's height
+		// enter code to create svg
+		var svg = d3.select("body").append("svg")
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+			.append("g")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		
+		
+		
+		// enter code to create color scale
+
+		// enter code to define tooltip
+        // Set tooltips
+		
+		// enter code to define projection and path required for Choropleth
+		
+		var projection = d3.geoMercator()
+			.scale(75000)
+			.translate([width/4,height/2-50])
+		var path = d3.geoPath().projection(projection)
+		var test = "2019"
+		// define any other global variables 
+
+// enter code to read files
+		var json = d3.json("../NYCNTA.geojson")
+		var csv = d3.csv("../visualization_data.csv")
+				
+        Promise.all([json,csv]).then(function(d){ ready(null, d[0], d[1])});
+            // enter code to call ready() with required arguments
+			
+		
+		// this function should be called once the data from files have been read
+		// world: topojson from world_countries.json
+		// crimeData: data from ratings-by-country.csv
+		
+        function ready(error, world, crimeData) {
+			var hashmap = {};
+			crimeData.forEach(function (d, i) {
+					if (!hashmap[d["year"]]) {
+					hashmap[d["year"]] = {};
+					hashmap[d["year"]][d["NTACode"]] = { "Crime Cost Per Capita Actual": +d["Crime Cost Per Capita Actual"], "Pop_1E": +d["Pop_1E"], "Predicted Crime Cost Per Capita": +d["Predicted Crime Cost Per Capita"], "Total Cost": +d["Total Cost"], "Education Budget":+d["Education Budget"],"Police Budget":+d["Police Budget"],"SocServices Budget":+d["SocServices Budget"], "Cost Change over Year": +d["Cost Change over Year"]};
+					hashmap[d["year"]]["Crime Cost Per Capita Actual"] = [ +d["Crime Cost Per Capita Actual"] ]
+					hashmap[d["year"]]["Predicted Crime Cost Per Capita"] = [ +d["Predicted Crime Cost Per Capita"] ]
+					hashmap[d["year"]]["Total Cost"] = [ +d["Total Cost"] ]
+					hashmap[d["year"]]["Cost Change over Year"] = [ +d["Cost Change over Year"] ]
+					hashmap[d["year"]]["Education Budget"] = [ +d["Education Budget"] ]
+					return;
+					}
+
+					hashmap[d["year"]][d["NTACode"]] = { "Crime Cost Per Capita Actual": +d["Crime Cost Per Capita Actual"], "Pop_1E": +d["Pop_1E"], "Predicted Crime Cost Per Capita": +d["Predicted Crime Cost Per Capita"], "Total Cost": +d["Total Cost"], "Education Budget":+d["Education Budget"],"Police Budget":+d["Police Budget"],"SocServices Budget":+d["SocServices Budget"], "Cost Change over Year": +d["Cost Change over Year"]};
+					hashmap[d["year"]]["Crime Cost Per Capita Actual"].push(+d["Crime Cost Per Capita Actual"]);
+					hashmap[d["year"]]["Predicted Crime Cost Per Capita"].push(+d["Predicted Crime Cost Per Capita"]);
+					hashmap[d["year"]]["Total Cost"].push(+d["Total Cost"]);
+					hashmap[d["year"]]["Cost Change over Year"].push(+d["Cost Change over Year"]);
+					hashmap[d["year"]]["Education Budget"].push(+d[""]);
+					});
+			crimeData = hashmap;
+			
+			var center = d3.geoCentroid(world);
+			projection.center(center);
+			
+			console.log('crimeData',crimeData)
+			console.log('world',world)
+            // enter code to extract all unique years from crimeData
+			const years = Object.keys(crimeData);
+			console.log("years",years)
+            // enter code to append the game options to the dropdown
+			d3.select("#dropdown")
+				.selectAll("option")
+				.data(years)
+				.enter()
+				.append("option")
+				.attr("id", function(option) { return option})
+				.text(function(option){return option})
+				.property("selected", function(d){ return d === "2019"; });
+				
+            // event listener for the dropdown. Update choropleth and legend when selection changes. Call createMapAndLegend() with required arguments.
+			d3.select("#dropdown").on('change', function() {
+				createMapAndLegend(world, crimeData, d3.select(this).property('value'));
+				const test = d3.select(this).property('value');
+				console.log("test",test);
+				});
+
+			buttons.on('change', function() {
+				var drop_year = d3.select('#dropdown').property('value');
+				createMapAndLegend(world, crimeData, drop_year);
+				console.log(currentValue);
+				});
+			
+			
+            // create Choropleth with default option. Call createMapAndLegend() with required arguments.
+			createMapAndLegend(world,hashmap,"2019")
+        }
+		
+		function svgFunction (nta,year){};
+		
+		// this function should create a Choropleth and legend using the world and crimeData arguments for a Year
+		// also use this function to update Choropleth and legend when a different game is selected from the dropdown
+        function createMapAndLegend(world, crimeData, Year){ 
+			
+			
+			d3.selectAll("g > *").remove();
+			
+			//var imgs = svg.selectAll("image").data([0]);
+                //imgs.enter()
+                //.append("svg:image")
+                //.attr("xlink:href", "../test2.png")
+                //.attr("x", width*3/4)
+                //.attr("y", "-100")
+                //.attr("width", "100")
+                //.attr("height", "100");
+			
+			
+			rect = svg.append('rect')
+				.attr('width', width/2+50)
+                .attr('height', 250)
+                .attr('x', width/2)
+                .attr('y', height-300)
+                .style('fill', 'white')
+                .attr('stroke', 'black')
+			text = svg.append('text').text('Explanation of the various response metrics:')
+				.attr('x', width/2+10)
+				.attr('y', height-280)
+				.attr('fill', 'black')
+				.attr('font-weight','bold')
+			text = svg.append('text').text('1. "Crime Cost Actual" -    Per capita cost of crime at the neighborhood (NTA) level. Lower = Better.')
+				.attr('x', width/2+10)
+				.attr('y', height-250)
+				.attr('fill', 'black')
+			text = svg.append('text').text('2. "Crime Cost Predicted" - expected cost of crime based for each NTA based on budgets, socioeconomics, and')
+				.attr('x', width/2+10)
+				.attr('y', height-210)
+				.attr('fill', 'black')
+			text = svg.append('text').text('prior year crime costs.  Calculated with a step-wise linear regression model.')
+				.attr('x', width/2+30)
+				.attr('y', height-190)
+			
+			text = svg.append('text').text('3. "Total Cost" - Sum of crime cost and overall budgetary expense. Overall toll on a given NTA.  Lower = Better.')
+				.attr('x', width/2+10)
+				.attr('y', height-150)
+				.attr('fill', 'black')
+				
+			text = svg.append('text').text('4. "Cost Change Over Year" - represents how much Total Cost changes year over year. Lower = Better')
+				.attr('x', width/2+10)
+				.attr('y', height-110)
+				.attr('fill', 'black')
+				
+			text = svg.append('text').text('Calculated as (current year crime cost + current year budget) - (prior year crime cost + prior year budget)')
+				.attr('x', width/2+30)
+				.attr('y', height-90)
+				.attr('fill', 'black')
+				
+			text = svg.append('text').text('No data for 2015 as we did not have complete budgetary information for 2014')
+				.attr('x', width/2+30)
+				.attr('y', height-70)
+				.attr('fill', 'black')	
+			<!-- svg.append("text") -->
+				<!-- .attr("y", height-50) -->
+				<!-- .attr("x", width) -->
+				<!-- .attr("text-anchor", "middle") -->
+				<!-- .style("font-weight","bold") -->
+				<!-- .attr("font-size","15px") -->
+				<!-- .text("eellenbogen3") -->
+				<!-- .style("fill","blue"); -->
+			
+			var color = d3.scaleQuantile()
+				.domain(crimeData[Year][currentValue])
+				.range(d3.schemeReds[8]);
+				
+			const tip = d3.tip()
+				.attr('class', 'd3-tip')
+				.offset([-10, 0])
+				.html(function (d) {
+				if (!crimeData[Year][d.properties.ntacode])
+				{
+				return `<strong>Country: </strong><span class='details'>${d.properties.ntacode}<br>
+				<strong>Game: </strong><span class='details'>${Year}`;
+				}
+
+				return `<strong>Neighborhood: </strong><span class='details'>${d.properties.ntaname}<br>
+				</span><strong>Population: </strong><span class='details'>${crimeData[Year][d.properties.ntacode]["Pop_1E"]}</span><br>
+				<strong>Metric: </strong><span class='details'>${crimeData[Year][d.properties.ntacode][currentValue]}<br>
+				<strong>Year: </strong><span class='details'>${Year}`;
+				});
+
+				svg.call(tip);
+			
+			
+			svg.append("g")
+				.attr("class","countries")
+				.selectAll("path")
+				.data(world.features)
+				.enter()
+				.append("path")
+				.attr('d',path)
+				.attr('id', function (d) { return d.properties.ntacode })
+				.style('fill', function (d) {
+				if (!crimeData[Year][d.properties.ntacode])
+				{
+				return 'gray';
+				}
+				return color(crimeData[Year][d.properties.ntacode][currentValue]) })
+				.style('stroke','black')
+				.style('opacity',0.8)
+				.style('stroke-width',0.8)
+				.on('mouseover',function(d){
+					nta = d.properties.ntaname
+					edu = crimeData[Year][d.properties.ntacode]["Education Budget"]
+					police = crimeData[Year][d.properties.ntacode]["Police Budget"]
+					socServices = crimeData[Year][d.properties.ntacode]["SocServices Budget"]
+					var bardata = [{"type":"Education Budget","value":edu},{"type":"Police Budget","value":police},{"type":"SocServices Budget","value":socServices}]
+					var barxscale = d3.scaleLinear()
+						.range([width/1.8,width])
+						.domain([0, d3.max(bardata, function(d) {return d.value;})]);
+					//d3.max(crimeData[Year]["Education Budget"]
+					//d3.max(bardata, function(d) {return d.value;})
+					var baryscale = d3.scaleBand()
+						.range([height/2.5, -50])
+						.domain(bardata.map(function (d) {return d.type}))
+						.padding(.2);
+						
+					var xAxis_bar = d3.axisBottom().scale(barxscale);
+					
+					svg.append("g")
+						.attr("id", "temp")
+						.attr("transform", "translate(0," + height/2.5 + ")")
+						.call(xAxis_bar);
+						
+					var yAxis_bar = d3.axisLeft().scale(baryscale);
+					svg.append("g")
+						.attr("id", "temp")
+						.call(yAxis_bar)
+						.attr("transform", "translate("+ width/1.8 +"," + 0 + ")");
+					
+					svg.append("text")
+						.attr("id","temp")
+						.attr("y", -60)
+						.attr("x", width*3/4)
+						.attr("text-anchor", "middle")
+						.style("font-weight","bold")
+						.attr("font-size","20px")
+						.text("Budget Breakdown for "+nta+" in "+Year);
+						
+					svg.append("text")
+						.attr("id","temp")
+						.attr("y", height/2.5 + 50)
+						.attr("x", width*3/4)
+						.attr("text-anchor", "middle")
+						.attr("font-size","14px")
+						.text("Spend Per Capita ($)");
+					
+						
+					var bars = svg.selectAll(".bar").data(bardata).enter().append("g")
+					
+					bars.append("rect")
+						.attr("id", "temp").attr("class", "bar")
+						.attr("y", function (d) { return baryscale(d.type);})
+						.attr("height", baryscale.bandwidth())
+						.attr("x",width/1.8)
+						//.attr("width", 200)
+						.attr("width", function (d) {return barxscale(d.value)*4/9;}); 
+					
+					tip.show(d);
+					d3.select(this)
+						.style('opacity', 1)
+						.style('stroke-width', 3);
+					})
+				.on('mouseout', function(d){
+					tip.hide(d);
+					d3.select(this)
+						.style('opacity', 0.8)
+						.style('stroke-width',0.3);
+					d3.selectAll("#temp").remove()
+					});
+				
+			// Save the legend svg in a variable  
+			// also changed the translate in order to keep the legend within the svg        
+			// and place it on the right side just for the example's sake
+			var legendSvg = svg.append('g')
+				.attr("transform","translate("+ (+30) + ",0)")
+
+			// Define the legend as you did
+			var legend = d3.legendColor()
+				.shape('rect')
+				.orient('vertical')
+				.title(currentValue+" in "+Year)
+				.shapeWidth(20)
+				.scale(color);
+
+			// And then call legend on the legendSvg not on svg itself
+				legendSvg.call(legend);	
+			
+			
+			
+        }
+    </script>
+
+</body>
+
+</html>
